@@ -16,7 +16,28 @@ export async function startServer(port) {
     ws.on("message", async (msg) => {
       if (!msg) return;
       const result = await detectFace(msg);
-      ws.send(JSON.stringify(result));
+      ws.send(
+        JSON.stringify(
+          result({
+            rect: {
+              x: result.alignedRect.box.x,
+              y: result.alignedRect.box.y,
+              width: result.alignedRect.box.width,
+              height: result.alignedRect.box.height,
+            },
+            angle: {
+              pitch: result.angle?.pitch ?? 0,
+              roll: result.angle?.roll ?? 0,
+              yaw: result.angle?.yaw ?? 0,
+            },
+            landmarks: {
+              leftEye: result.landmarks.getLeftEye()[0],
+              rightEye: result.landmarks.getRightEye()[0],
+              mouth: result.landmarks.getMouth()[0],
+            },
+          }),
+        ),
+      );
     });
 
     ws.on("error", (err) => {
