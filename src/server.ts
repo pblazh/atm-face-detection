@@ -1,6 +1,6 @@
 import http from "node:http";
-import { WebSocketServer }  from "ws";
-import { detectFace, init }  from "./detector";
+import { WebSocketServer } from "ws";
+import { detectFace, init } from "./detector";
 
 export async function startServer(port: number) {
   await init();
@@ -10,10 +10,9 @@ export async function startServer(port: number) {
   wss.on("connection", (ws, req) => {
     const ip = req.socket.remoteAddress;
     if (!ip) return;
-        console.info(`Connected`, ip);
+    console.info(`Connected`, ip);
 
-
-    ws.on("message", async (msg:Buffer) => {
+    ws.on("message", async (msg: Buffer) => {
       if (!msg) return;
       const result = await detectFace(msg);
 
@@ -21,11 +20,11 @@ export async function startServer(port: number) {
       if (!first) {
         ws.send(JSON.stringify([]));
         return;
-      }; 
+      }
 
       ws.send(
-        JSON.stringify(
-          ([{
+        JSON.stringify([
+          {
             rect: {
               x: first.alignedRect.box.x,
               y: first.alignedRect.box.y,
@@ -42,27 +41,28 @@ export async function startServer(port: number) {
               rightEye: first.landmarks.getRightEye()[0],
               mouth: first.landmarks.getMouth()[0],
             },
-          }]),
-        ),
+          },
+        ]),
       );
     });
 
-    ws.on("error", (err:Error) => {
+    ws.on("error", (err: Error) => {
       console.error(`Error ${err}`);
     });
 
-    ws.on("close", (ev:Error) => {
+    ws.on("close", (ev: Error) => {
       console.info(`Closed ${ev}`);
     });
   });
 
-  wss.on("close", (ev:Error) => {
+  wss.on("close", (ev: Error) => {
     console.info(`Server closed ${ev}`);
   });
 
-  wss.on("error", (err:Error) => {
+  wss.on("error", (err: Error) => {
     console.info(`Server error ${err}`);
   });
 
   server.listen(port, () => console.info(`WSServer is starting on :${port}`));
 }
+

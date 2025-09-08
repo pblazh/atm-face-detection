@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
-    "start:client": "serve",
+    "start:client": "cd client ; serve",
     "start:server": "NODE_ENV=development ts-node-dev --poll --rs  ./src/index.ts",
     "start": "run-p start:server start:client",
     "build": "tsc",
@@ -17,7 +17,7 @@
     "scripts": "dist/index.js",
     "assets": [
       "./node_modules/canvas/build/Release/*",
-      "./model/*"
+      "./src/model/*"
     ]
   },
   "keywords": [],
