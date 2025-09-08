@@ -1,12 +1,12 @@
-const WIDTH = 1280;
-const HEIGHT = 960;
+const WIDTH = 640;
+const HEIGHT = 480;
 
 async function getFrame(socket) {
   const video = document.getElementById("video");
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
-  ctx.drawImage(video, 0, 0, WIDTH / 2, HEIGHT / 2);
-
+  ctx.drawImage(video, 0, 0, WIDTH, HEIGHT);
+  
   canvas.toBlob(
     async (data) => {
       socket.send(data);
@@ -14,6 +14,7 @@ async function getFrame(socket) {
     "image/jpeg",
     0.9,
   );
+  
 }
 
 function drawResult(rect, angle, landmarks) {
@@ -33,17 +34,17 @@ function drawResult(rect, angle, landmarks) {
   ctx.fillText("pitch:" + angle.pitch, 10, 40);
   ctx.fillText("yaw:" + angle.yaw, 10, 60);
 
-  ctx.rect(rect._x * 2, rect._y * 2, rect._width * 2, rect._height * 2);
+  ctx.rect(rect.x, rect.y, rect.width, rect.height);
 
   landmarks.forEach((landmark) => {
-    ctx.rect(landmark._x * 2, landmark._y * 2, 4, 4);
+    ctx.rect(landmark._x, landmark._y, 4, 4);
   });
 
   ctx.stroke();
 }
 
 function main() {
-  const socket = new WebSocket("ws://localhost:8080");
+ const socket = new WebSocket("ws://127.0.0.1:8080");
 
   socket.addEventListener("open", (event) => {
     console.log("Connected to the Server!", event);
@@ -51,27 +52,31 @@ function main() {
 
   socket.addEventListener("message", (event) => {
     const message = JSON.parse(event.data);
-    console.log("Message from server ", message);
 
-    const rect = message[0]?.alignedRect._box;
-    const angle = message[0]?.angle;
-    const landmarks = message[0]?.landmarks._positions;
+    if (!message || !message.length) {
+      requestAnimationFrame(() => {
+        getFrame(socket);
+      });
+      return
+    }
 
+    const rect = message[0].rect;
+    const angle = message[0].angle;
+    const landmarks = message[0].landmarks;
+
+    console.log("Drawing results", rect, angle, landmarks);
     if (rect && angle && landmarks) {
-      const leftEye = 40;
-      const rightEye = 46;
-      const mouth = 57;
       drawResult(rect, angle, [
-        landmarks[leftEye],
-        landmarks[rightEye],
-        landmarks[mouth],
+        landmarks.leftEye,
+        landmarks.rightEye,
+        landmarks.mouth,
       ]);
     }
     requestAnimationFrame(() => {
       getFrame(socket);
     });
   });
-
+ 
   navigator.mediaDevices
     .getUserMedia({ video: { width: WIDTH, height: HEIGHT }, audio: false })
     .then((stream) => {

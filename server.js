@@ -1,41 +1,51 @@
-import http from "node:http";
-import { WebSocketServer } from "ws";
-import { detectFace, init } from "./detector.mjs";
+const http = require( "node:http");
+const { WebSocketServer } = require( "ws");
+const { detectFace, init } = require("./detector.js");
 
-export async function startServer(port) {
+async function startServer(port) {
   await init();
   const server = http.createServer({});
   const wss = new WebSocketServer({ server });
 
   wss.on("connection", (ws, req) => {
+
     const ip = req.socket.remoteAddress;
     if (!ip) return;
+        console.info(`Connected`, ip);
 
-    console.info(`Connected ${ip}`);
 
     ws.on("message", async (msg) => {
       if (!msg) return;
       const result = await detectFace(msg);
+      console.log("Detection result", result);
+      if (!result || !result.length) {
+        ws.send(JSON.stringify([]));
+        return;
+      }; 
+
+      const first = result[0];
+
+
       ws.send(
         JSON.stringify(
-          result({
+          ([{
             rect: {
-              x: result.alignedRect.box.x,
-              y: result.alignedRect.box.y,
-              width: result.alignedRect.box.width,
-              height: result.alignedRect.box.height,
+              x: first.alignedRect.box.x,
+              y: first.alignedRect.box.y,
+              width: first.alignedRect.box.width,
+              height: first.alignedRect.box.height,
             },
             angle: {
-              pitch: result.angle?.pitch ?? 0,
-              roll: result.angle?.roll ?? 0,
-              yaw: result.angle?.yaw ?? 0,
+              pitch: first.angle?.pitch ?? 0,
+              roll: first.angle?.roll ?? 0,
+              yaw: first.angle?.yaw ?? 0,
             },
             landmarks: {
-              leftEye: result.landmarks.getLeftEye()[0],
-              rightEye: result.landmarks.getRightEye()[0],
-              mouth: result.landmarks.getMouth()[0],
+              leftEye: first.landmarks.getLeftEye()[0],
+              rightEye: first.landmarks.getRightEye()[0],
+              mouth: first.landmarks.getMouth()[0],
             },
-          }),
+          }]),
         ),
       );
     });

@@ -1,10 +1,7 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import tf from "@tensorflow/tfjs-node"; // in nodejs environments tfjs-node is required to be loaded before face-api
-import * as faceapi from "@vladmandic/face-api";
-import canvas from "canvas";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const  path = require( "node:path");
+const  tf = require( "@tensorflow/tfjs-node"); // in nodejs environments tfjs-node is required to be loaded before face-api
+const faceapi = require( "@vladmandic/face-api");
+const canvas = require( "canvas");
 
 faceapi.env.monkeyPatch({
   Canvas: canvas.Canvas,
@@ -14,7 +11,7 @@ faceapi.env.monkeyPatch({
 
 const modelPathRoot = "./model";
 
-export async function init() {
+async function init() {
   await faceapi.tf.setBackend("tensorflow");
   await faceapi.tf.ready();
 
@@ -29,7 +26,7 @@ export async function init() {
   console.info("Loaded models");
 }
 
-export async function detectFace(data) {
+async function detectFace(data) {
   const options = new faceapi.SsdMobilenetv1Options({
     minConfidence: 0.1,
     maxResults: 10,
@@ -47,3 +44,5 @@ export async function detectFace(data) {
   // console.log(JSON.stringify(result[0].landmarks, null, 2)); // eslint-disable-line no-console
   return result;
 }
+
+module.exports = {init, detectFace}
