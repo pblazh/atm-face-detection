@@ -1,0 +1,1 @@
+nssm remove vision-web-face-api
