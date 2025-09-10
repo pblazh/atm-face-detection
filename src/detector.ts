@@ -2,6 +2,8 @@ import path from "node:path";
 import _ from "@tensorflow/tfjs-node"; // in nodejs environments tfjs-node is required to be loaded before face-api
 import * as faceapi from "@vladmandic/face-api";
 import canvas from "canvas";
+import { Face } from "./types";
+import { logInfo } from "./logger";
 
 faceapi.env.monkeyPatch({
   Canvas: canvas.Canvas,
@@ -25,7 +27,7 @@ export async function init() {
   await faceapi.nets.faceRecognitionNet.loadFromDisk(modelPath);
   await faceapi.nets.faceExpressionNet.loadFromDisk(modelPath);
 
-  console.info("Loaded models");
+  logInfo({ message: "LOADED" });
 }
 
 export async function detectFace(data: Buffer) {
@@ -40,11 +42,59 @@ export async function detectFace(data: Buffer) {
   const result = await faceapi
     .detectAllFaces(expandT, options) // run detection
     .withFaceLandmarks();
-  // .withFaceExpressions()
-  // .withFaceDescriptors();
-  //.withAgeAndGender();
   // @ts-ignore
   faceapi.tf.dispose([decodeT, expandT]); // dispose tensors to avoid memory leaks
-  // console.log(JSON.stringify(result[0].landmarks, null, 2)); // eslint-disable-line no-console
-  return result;
+  return toFaces(result);
+}
+
+function toFaces(
+  result: Array<
+    faceapi.WithFaceLandmarks<
+      {
+        detection: faceapi.FaceDetection;
+      },
+      faceapi.FaceLandmarks68
+    >
+  >,
+): Face[] {
+  //TODO: return the biggest face only
+  return result
+    .slice(0, 1)
+    .map((detection): Face | null => {
+      const leftEyePoints = detection.landmarks.getLeftEye();
+      const rightEyePoints = detection.landmarks.getRightEye();
+      const mouthPoints = detection.landmarks.getMouth();
+
+      if (
+        !leftEyePoints.length ||
+        !rightEyePoints.length ||
+        !mouthPoints.length
+      ) {
+        return null;
+      }
+
+      const leftEye = leftEyePoints[Math.floor(leftEyePoints.length / 2)]!;
+      const rightEye = rightEyePoints[Math.floor(rightEyePoints.length / 2)]!;
+      const mouth = mouthPoints[Math.floor(mouthPoints.length / 2)]!;
+
+      return {
+        rect: {
+          x: detection.alignedRect.box.x,
+          y: detection.alignedRect.box.y,
+          width: detection.alignedRect.box.width,
+          height: detection.alignedRect.box.height,
+        },
+        angle: {
+          pitch: detection.angle?.pitch ?? 0,
+          roll: detection.angle?.roll ?? 0,
+          yaw: detection.angle?.yaw ?? 0,
+        },
+        landmarks: {
+          leftEye: { x: leftEye.x, y: leftEye.y },
+          rightEye: { x: rightEye.x, y: rightEye.y },
+          mouth: { x: mouth.x, y: mouth.y },
+        },
+      };
+    })
+    .filter(Boolean) as Face[];
 }
