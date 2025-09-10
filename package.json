@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
-    "start:client": "cd client ; serve",
-    "start:server": "NODE_ENV=development ts-node-dev --poll --rs  ./src/index.ts",
+    "start:client": "serve client",
+    "start:server": "ts-node-dev --poll --rs  ./src/index.ts",
     "start": "run-p start:server start:client",
+    "prebuild":"copy src\\model dist\\model",
     "build": "tsc",
-    "pkg": "npm run build && pkg --no-bytecode ."
+    "pkg": "npm run build && pkg --no-bytecode --debug ."
   },
-  "bin": "./server.js",
+  "bin": "./dist/index.js",
   "pkg": {
     "targets": [
       "node18-win-x64"
@@ -17,7 +18,8 @@
     "scripts": "dist/index.js",
     "assets": [
       "./node_modules/canvas/build/Release/*",
-      "./src/model/*"
+      "./node_modules/@tensorflow/tfjs-node/lib/napi-v8/*",
+      "./dist/model/*"
     ]
   },
   "keywords": [],

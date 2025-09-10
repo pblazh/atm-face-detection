@@ -1,4 +1,4 @@
-import faceapi from "@vladmandic/face-api";
+import * as faceapi from "@vladmandic/face-api";
 export declare function init(): Promise<void>;
 export declare function detectFace(data: Buffer): Promise<faceapi.WithFaceLandmarks<{
     detection: faceapi.FaceDetection;
